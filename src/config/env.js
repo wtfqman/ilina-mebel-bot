@@ -35,6 +35,15 @@ function parseAdminIdsEnvValue(value = '') {
   return [...new Set(adminIds)];
 }
 
+const DEFAULT_GOOGLE_SHEETS_SPREADSHEET_ID = '1rN56kxp46in3y_A6dMOhvDnPokiujIH8-kQA4hUC6K8';
+const DEFAULT_GOOGLE_SHEETS_CLIENT_EMAIL = 'enza-home@enza-home-493011.iam.gserviceaccount.com';
+const DEFAULT_GOOGLE_SHEETS_SHEETS = Object.freeze({
+  customerRequests: 'Запросы',
+  consultations: 'Записи на консультацию',
+  designers: 'Дизайнеры',
+  designerProjects: 'Проекты дизайнеров',
+});
+
 const config = {
   botToken: process.env.BOT_TOKEN || '',
   groupChatId: process.env.GROUP_CHAT_ID || '',
@@ -43,19 +52,27 @@ const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   adminIds: parseAdminIdsEnvValue(process.env.ADMIN_IDS || ''),
   priceTelegramFileId: process.env.PRICE_TELEGRAM_FILE_ID || '',
-  googleSheetsSpreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID || '',
-  googleSheetsClientEmail: process.env.GOOGLE_SHEETS_CLIENT_EMAIL || '',
+  googleSheetsSpreadsheetId:
+    process.env.GOOGLE_SHEETS_SPREADSHEET_ID ||
+    DEFAULT_GOOGLE_SHEETS_SPREADSHEET_ID,
+  googleSheetsClientEmail:
+    process.env.GOOGLE_SHEETS_CLIENT_EMAIL ||
+    DEFAULT_GOOGLE_SHEETS_CLIENT_EMAIL,
   googleSheetsPrivateKey: normalizeMultilineEnvValue(process.env.GOOGLE_SHEETS_PRIVATE_KEY || ''),
   googleSheetsCustomerRequestsSheet:
     process.env.GOOGLE_SHEETS_CUSTOMER_REQUESTS_SHEET ||
     process.env.GOOGLE_SHEETS_APPLICATION_SHEET ||
-    '',
+    DEFAULT_GOOGLE_SHEETS_SHEETS.customerRequests,
   googleSheetsConsultationsSheet:
     process.env.GOOGLE_SHEETS_CONSULTATIONS_SHEET ||
     process.env.GOOGLE_SHEETS_CONSULTATION_SHEET ||
-    '',
-  googleSheetsDesignersSheet: process.env.GOOGLE_SHEETS_DESIGNERS_SHEET || '',
-  googleSheetsDesignerProjectsSheet: process.env.GOOGLE_SHEETS_DESIGNER_PROJECTS_SHEET || '',
+    DEFAULT_GOOGLE_SHEETS_SHEETS.consultations,
+  googleSheetsDesignersSheet:
+    process.env.GOOGLE_SHEETS_DESIGNERS_SHEET ||
+    DEFAULT_GOOGLE_SHEETS_SHEETS.designers,
+  googleSheetsDesignerProjectsSheet:
+    process.env.GOOGLE_SHEETS_DESIGNER_PROJECTS_SHEET ||
+    DEFAULT_GOOGLE_SHEETS_SHEETS.designerProjects,
 };
 
 function validateEnv() {

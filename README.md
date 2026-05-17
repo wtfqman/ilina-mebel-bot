@@ -88,70 +88,70 @@ npm start
 
 ## Google Sheets Setup
 
-Нужно создать одну таблицу Google Sheets и 4 листа внутри нее.
+Нужно создать одну таблицу Google Sheets. Бот сам создаст и оформит нужные листы, если у service account есть доступ на редактирование.
 
 Также нужно открыть доступ к этой таблице для `GOOGLE_SHEETS_CLIENT_EMAIL` от service account, иначе API не сможет добавлять строки.
 
-Названия листов:
+Названия листов по умолчанию:
 
-- `customer_requests`
-- `consultations`
-- `designers`
-- `designer_projects`
+- `Запросы`
+- `Записи на консультацию`
+- `Дизайнеры`
+- `Проекты дизайнеров`
 
-### Лист `customer_requests`
-
-Заголовки колонок:
-
-- `created_at`
-- `type`
-- `name`
-- `phone`
-- `city`
-- `request_text`
-- `telegram_username`
-- `telegram_user_id`
-
-### Лист `consultations`
+### Лист `Запросы`
 
 Заголовки колонок:
 
-- `created_at`
-- `type`
-- `role`
-- `name`
-- `phone`
-- `city`
-- `manager`
-- `preferred_time`
-- `telegram_username`
-- `telegram_user_id`
+- `Дата создания`
+- `Тип`
+- `Имя`
+- `Телефон`
+- `Город`
+- `Запрос`
+- `Telegram`
+- `Telegram ID`
 
-### Лист `designers`
+### Лист `Записи на консультацию`
 
 Заголовки колонок:
 
-- `created_at`
-- `type`
-- `full_name`
-- `contacts`
-- `certificate_info`
-- `telegram_username`
-- `telegram_user_id`
+- `Дата создания`
+- `Тип`
+- `Роль`
+- `Имя`
+- `Телефон`
+- `Город`
+- `Менеджер`
+- `Удобное время`
+- `Telegram`
+- `Telegram ID`
 
-### Лист `designer_projects`
+### Лист `Дизайнеры`
 
 Заголовки колонок:
 
-- `created_at`
-- `type`
-- `full_name`
-- `phone`
-- `city`
-- `project_description`
-- `comment`
-- `telegram_username`
-- `telegram_user_id`
+- `Дата создания`
+- `Тип`
+- `ФИО`
+- `Контакты`
+- `Сертификат / информация`
+- `Telegram`
+- `Telegram ID`
+
+### Лист `Проекты дизайнеров`
+
+Заголовки колонок:
+
+- `Дата создания`
+- `Тип`
+- `ФИО`
+- `Телефон`
+- `Город`
+- `Описание проекта`
+- `Комментарий`
+- `Telegram`
+- `Telegram ID`
 
 ## Assets
 

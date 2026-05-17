@@ -1,7 +1,10 @@
 const { createBot, initializeBot } = require('./bot');
 const { config, getConfigWarnings, validateEnv } = require('./config/env');
 const { logger } = require('./config/logger');
-const { logGoogleSheetsStartupStatus } = require('./services/googleSheetsService');
+const {
+  ensureGoogleSheetsStructure,
+  logGoogleSheetsStartupStatus,
+} = require('./services/googleSheetsService');
 
 function registerProcessHandlers(bot) {
   const shutdown = async (signal) => {
@@ -35,6 +38,7 @@ function registerProcessHandlers(bot) {
 async function bootstrap() {
   validateEnv();
   logGoogleSheetsStartupStatus();
+  await ensureGoogleSheetsStructure();
 
   const bot = createBot();
 
