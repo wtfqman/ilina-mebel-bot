@@ -10,7 +10,7 @@ const MANAGERS = Object.freeze([
     phone: '+7 919 616 3387',
     email: 'natalia.tehnoidea@mail.ru',
     username: '',
-    description: '',
+    description: 'менеджер по корпусной мебели на заказ',
   }),
   Object.freeze({
     id: 'martyanova_diana',
@@ -18,7 +18,7 @@ const MANAGERS = Object.freeze([
     phone: '+7 996 103 1951',
     email: '2908698@mail.ru',
     username: '',
-    description: '',
+    description: 'менеджер по технике и стеновым панелям',
   }),
   Object.freeze({
     id: 'akhmatdinova_galiya',
@@ -26,7 +26,7 @@ const MANAGERS = Object.freeze([
     phone: '+7 917 346 2206',
     email: 'tehnoidea@inbox.ru',
     username: '',
-    description: '',
+    description: 'менеджер по корпусной мебели на заказ',
   }),
   Object.freeze({
     id: 'akhmetzyanova_ilina',
@@ -34,7 +34,7 @@ const MANAGERS = Object.freeze([
     phone: '+7 987 133 7415',
     email: 'infoenzahome@mail.ru',
     username: '',
-    description: '',
+    description: 'менеджер по интерьерным решениям (мягкая мебель, корпусная, обеденные группы, декор)',
   }),
   Object.freeze({
     id: 'shamsieva_rita_rimovna',
@@ -42,7 +42,7 @@ const MANAGERS = Object.freeze([
     phone: '89961071053',
     email: 'rita.shamsieva@mail.ru',
     username: '',
-    description: '',
+    description: 'универсальный менеджер (корпусная мебель, мягкая мебель)',
   }),
 ]);
 

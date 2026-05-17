@@ -19,7 +19,6 @@ function buildConsultationLeadMessage(payload = {}) {
     `Роль: ${payload.role || '—'}`,
     `Имя: ${payload.name || '—'}`,
     `Телефон: ${payload.phone || '—'}`,
-    `Город: ${payload.city || '—'}`,
     `Менеджер: ${payload.manager || '—'}`,
     `Удобное время: ${payload.convenientTime || '—'}`,
     `Username: ${payload.username || '—'}`,

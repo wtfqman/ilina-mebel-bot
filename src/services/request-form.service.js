@@ -1,18 +1,11 @@
 const { REQUEST_FORM_FIELD_LABELS } = require('../constants/request-form-texts');
 const { formatDateTime } = require('../utils/date-time');
-const {
-  isNonEmptyText,
-  isValidPhoneNumber,
-  normalizePhoneNumber,
-  sanitizeTextInput,
-} = require('../utils/validation');
+const { isNonEmptyText, sanitizeTextInput } = require('../utils/validation');
 const { createFormSessionService } = require('./form-session.service');
 
 const REQUEST_FORM_SESSION_KEY = 'customerRequestForm';
-const PHONE_CANDIDATE_PATTERN = /\+?\d[\d\s().-]{8,}\d/g;
 
 const NAME_LABELS = Object.freeze(['имя', 'фио', 'name']);
-const PHONE_LABELS = Object.freeze(['номер телефона', 'телефон', 'phone']);
 const REQUEST_LABELS = Object.freeze([
   'что нужно подобрать',
   'что нужно',
@@ -22,28 +15,7 @@ const REQUEST_LABELS = Object.freeze([
 ]);
 const ALL_FIELD_LABELS = Object.freeze([
   ...NAME_LABELS,
-  ...PHONE_LABELS,
   ...REQUEST_LABELS,
-]);
-const REQUEST_KEYWORDS = Object.freeze([
-  'бытов',
-  'гардероб',
-  'диван',
-  'интерес',
-  'кух',
-  'кровать',
-  'мебел',
-  'нуж',
-  'панел',
-  'подобр',
-  'проект',
-  'рассчит',
-  'стен',
-  'стол',
-  'стул',
-  'техник',
-  'хочу',
-  'шкаф',
 ]);
 
 function createEmptyRequestForm() {
@@ -86,57 +58,12 @@ function stripKnownLabels(value) {
   let result = sanitizeTextInput(value);
   const labelPattern = buildLabelPattern(ALL_FIELD_LABELS);
   const leadingLabelPattern = new RegExp(`^(?:${labelPattern})\\s*[:\\-–—]?\\s*`, 'iu');
-  const trailingLabelPattern = new RegExp(`\\s*(?:${labelPattern})\\s*[:\\-–—]?\\s*$`, 'iu');
 
-  while (leadingLabelPattern.test(result) || trailingLabelPattern.test(result)) {
-    result = result
-      .replace(leadingLabelPattern, '')
-      .replace(trailingLabelPattern, '')
-      .trim();
+  while (leadingLabelPattern.test(result)) {
+    result = result.replace(leadingLabelPattern, '').trim();
   }
 
   return cleanParsedValue(result);
-}
-
-function extractPhoneMatch(message) {
-  const matches = message.matchAll(PHONE_CANDIDATE_PATTERN);
-
-  for (const match of matches) {
-    const phone = normalizePhoneNumber(match[0]);
-
-    if (isValidPhoneNumber(phone)) {
-      return {
-        phone,
-        raw: match[0],
-        index: match.index,
-      };
-    }
-  }
-
-  return null;
-}
-
-function removePhoneFromMessage(message, phoneMatch) {
-  return [
-    message.slice(0, phoneMatch.index),
-    message.slice(phoneMatch.index + phoneMatch.raw.length),
-  ].join('\n');
-}
-
-function extractLabeledValue(text, labels, stopLabels) {
-  const labelPattern = buildLabelPattern(labels);
-  const stopPattern = buildLabelPattern(stopLabels);
-  const fieldPattern = new RegExp(
-    `(?:^|[\\n;])\\s*(?:${labelPattern})\\s*[:\\-–—]?\\s*([\\s\\S]*?)(?=(?:\\n|;|\\s)+(?:${stopPattern})\\s*[:\\-–—]?|$)`,
-    'iu',
-  );
-  const match = text.match(fieldPattern);
-
-  if (!match) {
-    return '';
-  }
-
-  return stripKnownLabels(match[1]);
 }
 
 function splitRequestLines(text) {
@@ -146,124 +73,40 @@ function splitRequestLines(text) {
     .filter(isNonEmptyText);
 }
 
-function containsRequestKeyword(value) {
-  const lowerValue = value.toLowerCase();
-  return REQUEST_KEYWORDS.some((keyword) => lowerValue.includes(keyword));
-}
-
-function looksLikeName(value) {
-  const normalizedValue = stripKnownLabels(value);
-  const words = normalizedValue.split(/\s+/).filter(Boolean);
-  const namePattern = /^[A-Za-zА-Яа-яЁёІіЇїЄє' -]+$/u;
-
-  return (
-    words.length > 0 &&
-    words.length <= 4 &&
-    normalizedValue.length <= 60 &&
-    namePattern.test(normalizedValue) &&
-    !containsRequestKeyword(normalizedValue)
-  );
-}
-
-function findNameLineIndex(lines) {
-  const candidates = lines
-    .map((line, index) => ({ line, index }))
-    .filter(({ line }) => looksLikeName(line));
-
-  if (candidates.length === 0) {
-    return -1;
-  }
-
-  candidates.sort((left, right) => {
-    const leftWordCount = left.line.split(/\s+/).length;
-    const rightWordCount = right.line.split(/\s+/).length;
-
-    return leftWordCount - rightWordCount || left.line.length - right.line.length;
-  });
-
-  return candidates[0].index;
-}
-
 function splitSingleLine(line) {
-  const words = line.split(/\s+/).filter(Boolean);
+  const words = stripKnownLabels(line).split(/\s+/).filter(Boolean);
 
   if (words.length < 2) {
     return {
-      name: stripKnownLabels(line),
+      name: words.join(' '),
       requestText: '',
     };
   }
 
-  const requestStartIndex = words.findIndex((word, index) => (
-    index > 0 && containsRequestKeyword(word)
-  ));
-  const splitIndex = requestStartIndex > 0 ? requestStartIndex : 1;
-
   return {
-    name: stripKnownLabels(words.slice(0, splitIndex).join(' ')),
-    requestText: stripKnownLabels(words.slice(splitIndex).join(' ')),
+    name: words[0],
+    requestText: words.slice(1).join(' '),
   };
 }
 
-function parseLineBasedFields(text) {
-  const lines = splitRequestLines(text);
+function parseCustomerRequestDetailsMessage(message) {
+  const lines = splitRequestLines(message);
 
   if (lines.length === 0) {
-    return {
-      name: '',
-      requestText: '',
-    };
-  }
-
-  if (lines.length === 1) {
-    return splitSingleLine(lines[0]);
-  }
-
-  const nameLineIndex = findNameLineIndex(lines);
-  const resolvedNameLineIndex = nameLineIndex >= 0 ? nameLineIndex : 0;
-  const requestLines = lines.filter((line, index) => index !== resolvedNameLineIndex);
-
-  return {
-    name: stripKnownLabels(lines[resolvedNameLineIndex]),
-    requestText: stripKnownLabels(requestLines.join('\n')),
-  };
-}
-
-function parseCustomerRequestMessage(message) {
-  const normalizedMessage = normalizeMultilineText(message);
-
-  if (!normalizedMessage) {
     return {
       isValid: false,
       reason: 'empty',
     };
   }
 
-  const phoneMatch = extractPhoneMatch(normalizedMessage);
-
-  if (!phoneMatch) {
-    return {
-      isValid: false,
-      reason: 'phone',
+  const parsedData = lines.length === 1
+    ? splitSingleLine(lines[0])
+    : {
+      name: stripKnownLabels(lines[0]),
+      requestText: stripKnownLabels(lines.slice(1).join('\n')),
     };
-  }
 
-  const messageWithoutPhone = removePhoneFromMessage(normalizedMessage, phoneMatch);
-  const fallbackFields = parseLineBasedFields(messageWithoutPhone);
-  const name = cleanParsedValue(
-    extractLabeledValue(messageWithoutPhone, NAME_LABELS, [
-      ...PHONE_LABELS,
-      ...REQUEST_LABELS,
-    ]) || fallbackFields.name,
-  );
-  const requestText = cleanParsedValue(
-    extractLabeledValue(messageWithoutPhone, REQUEST_LABELS, [
-      ...NAME_LABELS,
-      ...PHONE_LABELS,
-    ]) || fallbackFields.requestText,
-  );
-
-  if (!isNonEmptyText(name) || !isNonEmptyText(requestText)) {
+  if (!isNonEmptyText(parsedData.name) || !isNonEmptyText(parsedData.requestText)) {
     return {
       isValid: false,
       reason: 'incomplete',
@@ -272,11 +115,7 @@ function parseCustomerRequestMessage(message) {
 
   return {
     isValid: true,
-    data: {
-      name,
-      phone: phoneMatch.phone,
-      requestText,
-    },
+    data: parsedData,
   };
 }
 
@@ -309,7 +148,6 @@ function buildRequestSpreadsheetRecord(ctx) {
     type: 'customer_request',
     name: formData.name,
     phone: formData.phone,
-    city: '',
     request_text: formData.requestText,
     telegram_username: ctx.from?.username ? `@${ctx.from.username}` : '',
     telegram_user_id: ctx.from?.id ? String(ctx.from.id) : '',
@@ -319,7 +157,7 @@ function buildRequestSpreadsheetRecord(ctx) {
 module.exports = {
   ...requestFormSession,
   clearRequestForm: requestFormSession.clearForm,
-  parseCustomerRequestMessage,
+  parseCustomerRequestDetailsMessage,
   buildRequestSummary,
   buildRequestNotificationPayload,
   buildRequestSpreadsheetRecord,

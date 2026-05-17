@@ -1,19 +1,30 @@
-const { config } = require('../config/env');
+const { config, normalizeTelegramUserId } = require('../config/env');
+const { logger } = require('../config/logger');
 
-function normalizeUserId(userId) {
-  if (typeof userId === 'undefined' || userId === null) {
-    return '';
-  }
+function checkAdminAccess(userId) {
+  const normalizedUserId = normalizeTelegramUserId(userId);
+  const hasAccess = normalizedUserId !== null && config.adminIds.includes(normalizedUserId);
 
-  return String(userId);
+  logger.info('Admin access check.', {
+    userId: normalizedUserId,
+    adminIds: config.adminIds,
+    hasAccess,
+  });
+
+  return {
+    userId: normalizedUserId,
+    adminIds: config.adminIds,
+    hasAccess,
+  };
 }
 
 function isAdminUser(userId) {
-  const normalizedUserId = normalizeUserId(userId);
+  const { hasAccess } = checkAdminAccess(userId);
 
-  return Boolean(normalizedUserId && config.adminIds.includes(normalizedUserId));
+  return hasAccess;
 }
 
 module.exports = {
+  checkAdminAccess,
   isAdminUser,
 };

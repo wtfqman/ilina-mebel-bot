@@ -6,11 +6,33 @@ function normalizeMultilineEnvValue(value = '') {
   return value.replace(/\\n/g, '\n');
 }
 
-function parseCsvEnvValue(value = '') {
-  return value
+function stripWrappingQuotes(value = '') {
+  return String(value)
+    .trim()
+    .replace(/^['"]+|['"]+$/g, '')
+    .trim();
+}
+
+function normalizeTelegramUserId(userId) {
+  const normalizedUserId = stripWrappingQuotes(userId);
+
+  if (!/^\d+$/.test(normalizedUserId)) {
+    return null;
+  }
+
+  const numericUserId = Number(normalizedUserId);
+
+  return Number.isSafeInteger(numericUserId) ? numericUserId : null;
+}
+
+function parseAdminIdsEnvValue(value = '') {
+  const adminIds = String(value)
     .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
+    .map(stripWrappingQuotes)
+    .map(normalizeTelegramUserId)
+    .filter((adminId) => adminId !== null);
+
+  return [...new Set(adminIds)];
 }
 
 const config = {
@@ -19,7 +41,7 @@ const config = {
   customerRequestGroupChatId: process.env.CUSTOMER_REQUEST_GROUP_CHAT_ID || '-5124199963',
   botName: process.env.BOT_NAME || 'Furniture Company Bot',
   nodeEnv: process.env.NODE_ENV || 'development',
-  adminIds: parseCsvEnvValue(process.env.ADMIN_IDS || ''),
+  adminIds: parseAdminIdsEnvValue(process.env.ADMIN_IDS || ''),
   priceTelegramFileId: process.env.PRICE_TELEGRAM_FILE_ID || '',
   googleSheetsSpreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID || '',
   googleSheetsClientEmail: process.env.GOOGLE_SHEETS_CLIENT_EMAIL || '',
@@ -64,4 +86,6 @@ module.exports = {
   config,
   validateEnv,
   getConfigWarnings,
+  normalizeTelegramUserId,
+  parseAdminIdsEnvValue,
 };

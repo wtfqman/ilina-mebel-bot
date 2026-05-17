@@ -19,6 +19,7 @@ const FORM_BUTTONS = Object.freeze({
   CANCEL: 'Отменить',
   CONFIRM: 'Подтвердить отправку',
   SKIP: 'Пропустить',
+  SEND_PHONE: '📱 Отправить номер',
 });
 
 const CUSTOMER_MENU_BUTTONS = Object.freeze({

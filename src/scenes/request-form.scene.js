@@ -4,12 +4,11 @@ const { config } = require('../config/env');
 const { logger } = require('../config/logger');
 const { BOT_TEXTS } = require('../constants/bot-texts');
 const { FORM_BUTTONS } = require('../constants/buttons');
-const { PERSONAL_DATA_TEXTS } = require('../constants/personal-data-texts');
 const { REQUEST_FORM_TEXTS } = require('../constants/request-form-texts');
 const { SCENE_IDS } = require('../constants/scenes');
 const { formCancelKeyboard } = require('../keyboards/form-cancel.keyboard');
-const { formConsentKeyboard } = require('../keyboards/form-consent.keyboard');
 const { formConfirmKeyboard } = require('../keyboards/form-confirm.keyboard');
+const { requestContactKeyboard } = require('../keyboards/request-contact.keyboard');
 const { appendCustomerRequestSubmission } = require('../services/google-sheets.service');
 const { buildRequestLeadMessage } = require('../services/group-notification.service');
 const { deliverLead } = require('../services/lead-delivery.service');
@@ -22,14 +21,22 @@ const {
   getForm,
   initializeForm,
   isSubmissionInProgress,
-  parseCustomerRequestMessage,
+  parseCustomerRequestDetailsMessage,
   setSubmissionInProgress,
   updateFormField,
 } = require('../services/request-form.service');
-const { sanitizeTextInput } = require('../utils/validation');
+const {
+  isValidPhoneNumber,
+  normalizePhoneNumber,
+  sanitizeTextInput,
+} = require('../utils/validation');
 
 function getTextMessage(ctx) {
   return sanitizeTextInput(ctx.message?.text);
+}
+
+function getContactPhone(ctx) {
+  return normalizePhoneNumber(ctx.message?.contact?.phone_number);
 }
 
 async function leaveScene(ctx) {
@@ -71,33 +78,38 @@ async function tryHandleSceneCommand(ctx) {
 async function enterScene(ctx) {
   logger.info('Customer request form entered.', { userId: ctx.from?.id });
   initializeForm(ctx);
-  await ctx.reply(PERSONAL_DATA_TEXTS.consent, formConsentKeyboard);
+  await ctx.reply(REQUEST_FORM_TEXTS.phoneRequest, requestContactKeyboard);
   return ctx.wizard.next();
 }
 
-async function handleConsent(ctx) {
+async function handleContact(ctx) {
   if (await tryHandleSceneCommand(ctx)) {
     return undefined;
   }
 
-  const userChoice = getTextMessage(ctx);
-
-  if (userChoice !== FORM_BUTTONS.CONSENT) {
-    await ctx.reply(PERSONAL_DATA_TEXTS.consentChoiceOnly, formConsentKeyboard);
+  if (!ctx.message?.contact?.phone_number) {
+    await ctx.reply(REQUEST_FORM_TEXTS.contactRequired, requestContactKeyboard);
     return undefined;
   }
 
-  await ctx.reply(REQUEST_FORM_TEXTS.intro, formCancelKeyboard);
+  const phone = getContactPhone(ctx);
+
+  if (!isValidPhoneNumber(phone)) {
+    await ctx.reply(REQUEST_FORM_TEXTS.invalidContact, requestContactKeyboard);
+    return undefined;
+  }
+
+  updateFormField(ctx, 'phone', phone);
+  await ctx.reply(REQUEST_FORM_TEXTS.detailsPrompt, formCancelKeyboard);
   return ctx.wizard.next();
 }
 
-function saveParsedRequest(ctx, parsedData) {
+function saveParsedRequestDetails(ctx, parsedData) {
   updateFormField(ctx, 'name', parsedData.name);
-  updateFormField(ctx, 'phone', parsedData.phone);
   updateFormField(ctx, 'requestText', parsedData.requestText);
 }
 
-async function handleRequestInput(ctx) {
+async function handleRequestDetails(ctx) {
   if (await tryHandleSceneCommand(ctx)) {
     return undefined;
   }
@@ -107,18 +119,14 @@ async function handleRequestInput(ctx) {
     return undefined;
   }
 
-  const parseResult = parseCustomerRequestMessage(ctx.message.text);
+  const parseResult = parseCustomerRequestDetailsMessage(ctx.message.text);
 
   if (!parseResult.isValid) {
-    const errorText = parseResult.reason === 'phone'
-      ? REQUEST_FORM_TEXTS.phoneNotFound
-      : REQUEST_FORM_TEXTS.incompleteRequest;
-
-    await ctx.reply(errorText, formCancelKeyboard);
+    await ctx.reply(REQUEST_FORM_TEXTS.incompleteRequest, formCancelKeyboard);
     return undefined;
   }
 
-  saveParsedRequest(ctx, parseResult.data);
+  saveParsedRequestDetails(ctx, parseResult.data);
 
   await ctx.reply(
     REQUEST_FORM_TEXTS.confirmation(buildRequestSummary(getForm(ctx))),
@@ -182,8 +190,8 @@ async function handleConfirmation(ctx) {
 const requestFormScene = new Scenes.WizardScene(
   SCENE_IDS.CUSTOMER_REQUEST,
   enterScene,
-  handleConsent,
-  handleRequestInput,
+  handleContact,
+  handleRequestDetails,
   handleConfirmation,
 );
 

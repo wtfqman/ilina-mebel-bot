@@ -4,12 +4,21 @@ function formatOptionalValue(value) {
   return value || '—';
 }
 
+function formatDescription(value) {
+  if (!value) {
+    return '';
+  }
+
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 function buildManagerBlock(manager, index) {
   const lines = [
     `${index + 1}. ${manager.name}`,
+    formatDescription(manager.description),
     `Телефон: ${formatOptionalValue(manager.phone)}`,
     `Email: ${formatOptionalValue(manager.email)}`,
-  ];
+  ].filter(Boolean);
 
   return lines.join('\n');
 }
